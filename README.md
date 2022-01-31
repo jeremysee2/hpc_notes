@@ -2,6 +2,13 @@
 
 This provides a brief overview of the HPC curriculum and my notes for the course.
 
+## Installation and Setup
+
+If you are using your own machine to compile and run your code, here's a guide to using Linux:
+
+### Windows Subsystem for Linux (WSL)
+
+If you are using WSL virtualisation, you simply need to run `ubuntu` in powershell to enter your distro. Then install the required libraries with `sudo apt install -y libblas-dev liblapack-dev`. The libaries will be located in `/lib/x86_64-linux-gnu`.
 ## Compilation
 
 This can be broken down into three stages:
@@ -299,6 +306,7 @@ Consider the dot product of two vectors `x` and `y`, use the BLAS routine `ddot`
 ```cpp
 #include <iostream>
 #include <cstdlib>
+using namespace std;
 #define F77NAME(x) x##_
 extern "C" {
     double F77NAME(ddot) (const int& n,
