@@ -410,7 +410,7 @@ Again, take care to set `beta` to zero, or the matrix elements of `c` to zeroif 
 
 ### Operating on sub-matrices
 
-![](BLAS-level-3.PNG)
+![](img/BLAS-level-3.PNG)
 
 BLAS routines can operate on submatrices by:
 
