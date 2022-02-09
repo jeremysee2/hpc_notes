@@ -2,6 +2,13 @@
 
 This provides a brief overview of the HPC curriculum and my notes for the course.
 
+## Quick links
+
+To use code linting with `cblas.h`, add the headerfile to your local workspace. Its helpful when you are writing code on your local machine without the library, but executing on another environment where the library is installed.
+
+* (BLAS quick reference)[https://www.netlib.org/lapack/lug/node145.html]
+* (BLAS documentation pages)[http://www.netlib.org/lapack/explore-html/modules.html]
+
 ## Installation and Setup
 
 If you are using your own machine to compile and run your code, here's a guide to using Linux:
