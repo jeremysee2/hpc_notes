@@ -1101,3 +1101,253 @@ mpiexec ./mycode
 * `qstat -Qf <queue-name>`: list details of a queue
 * `qdel <job-id>`: remove/cancel a job you own
 * `qalter -N mynewjobname <job-id>`: modify a job
+
+## Message Passing Interface (MPI)
+
+Parallel computing is the process of dividing up a large computation into smaller computations which can be undertaken concurrently. There are two main types: *message passing* and *shared memory*. The latter is restricted to a single machine.
+
+### MPI Basics
+
+```cpp
+#include <iostream>
+using namespace std;
+
+#include <mpi.h>
+
+int main(int argc, char* argv[]) {
+    // Initialise MPI - must be called before attempting any communication
+    MPI_Init(&argc, &argv);
+
+    // Get the index of this process in the set of all processes
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    cout << "Hello from rank " << rank << "!" << endl;
+
+    // Finalise MPI - cannot do communication after this!
+    MPI_Finalize();
+}
+
+```
+
+```cpp
+#include <iostream>
+#include <mpi.h>
+
+int main(int argc, char* argv[]) {
+    int s, r;
+
+    MPI_Init(&argc, &argv);
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &r);
+    MPI_Comm_size(MPI_COMM_WORLD, &s);
+
+    // Check we have exactly 2 processes for this demo
+    if (s != 2) {
+        std::cout << "Only 2 processes allowed with this program!" << std::endl;
+        MPI_Finalize();
+        return 1;
+    }
+
+    // Generate a random number
+    srand(time(0) + r*100);
+    double x = (double)(rand())/RAND_MAX;
+    double y = 0.0f;
+
+    std::cout << "Performing exchange... " << std::endl;
+    std::cout << "Rank " << r << " sends " << x << std::endl;
+
+    if (r == 0) {
+        // Only execute on process 0
+        // MPI_Send (&var, count, type, dest, tag, comm)
+        MPI_Send(&x, 1, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD);
+
+        // MPI_Recv (&var, count, type, src, tag, comm, status)
+        MPI_Recv(&y, 1, MPI_DOUBLE, 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    } else {
+        // Execute on all other processes (1)
+        // Recv from 0
+        MPI_Recv(&y, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        // Send to 0s
+        MPI_Send(&x, 1, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD);
+    }
+
+    std::cout << "Complete!" << std::endl;
+    std::cout << "Rank: " << r << " receives: " << y << std::endl;
+
+    MPI_Finalize();
+    return 0;
+}
+
+```
+
+## OpenMP
+
+OpenMP allows us to write multi-threaded shared memory programs, rather than multi-process like MPI. OpenMP is mostly used through compiler directives to specify concurrency in code. Environmental variables are used to control aspects of OpenMP, such as the number of threads to use.
+
+A summary of [OpenMP directives](https://www.openmp.org/resources/tutorials-articles/) are listed below:
+
+![](img/openmp-directives.png)
+
+### Compiling OpenMP
+
+```bash
+g++ -fopenmp -c -o my_omp_prog.o my_omp_prog.cpp
+```
+
+### OpenMP Directives
+
+An OpenMP (preprocessor) directive has the following general syntax:
+
+```cpp
+#pragma omp [directive-name] [clause, ...]
+{
+    [C++ code]
+}
+```
+
+### OpenMP Example
+
+```cpp
+#include <iostream>
+
+using namespace std;
+#include "omp.h"
+
+int main(int argc, char *argv[]) {
+    int nthreads = 0;
+    int threadId = 0;
+
+    #pragma omp parallel private(nthreads, threadId) {
+        threadId = omp_get_thread_num();
+        #pragma omp critical // Only one thread at a time can execute the following statement
+        cout << "Hello world from thread = " << threadId << endl;
+
+        // All threads reach here before continuing execution
+        #pragma omp barrier
+        if (threadId == 0) {
+            nthreads = omp_get_num_threads();
+            cout << "Number of threads = " << nthreads << endl;
+        }
+    }
+}
+```
+
+Set number of threads to run in bash environment variable:
+```bash
+export OMP_NUM_THREADS=4
+```
+
+### OMP Reduction
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main(int argc, char *argv[]) {
+    const int n     = 100;
+    const int chunk = 10;
+    int i           = 0;
+    double dot      = 0.0;
+    double norm_a   = 0.0;
+    double prod_b   = 1.0;
+    double a[n], b[n];
+
+    for (i=0; i<n; i++) {
+        a[i] = i * 1.0 / n;
+        b[i] = (i+1) * 2.0 / n;
+    }
+
+    #pragma omp parallel for \
+        reduction(+:dot,norm_a) reduction(*:prod_b) \
+        schedule(static,chunk)
+    for (i=0; i<n; i++) {
+        cout << omp_get_thread_num() << endl;
+        dot = dot + (a[i] * b[i]);
+        norm_a = norm_a + (a[i] * a[i]);
+        prod_b = prod_b + b[i];
+    }
+
+    cout << "Final dot= " << dot << endl;
+    cout << "Final norm_a= " << norm_a << endl;
+    cout << "Final prod_b= " << prod_b << endl;
+}
+```
+
+### OpenMP Sections
+
+```cpp
+#include <iostream>
+#include <iomanip>
+
+int main(int argc[], char *argv[]) {
+    const int N = 10;
+    int i;
+    float a[N], b[N], c[N], d[N];
+
+    for (i=0; i<N; i++) {
+        a[i] = i * 1.0;
+        b[i] = i + 2.0;
+    }
+
+    #pragma omp parallel private(i)
+    {
+        #pragma omp sections
+        {
+            #pragma omp section
+            for (i=0; i<N; i++) {           // c = a + b
+                c[i] = a[i] + b[i];
+            }
+
+            #pragma omp section
+            for (i=0; i<N; i++) {           // d = a * b
+                d[i] = a[i] * b[i];
+            }
+        }
+    }
+
+    for (i=0; i<N; i++) {
+        cout << setw(10) << a[i] << setw(10) << b[i]
+             << setw(10) << c[i] << setw(10) << d[i] << endl;
+    }
+}
+```
+
+### OpenMP Tasks
+
+```cpp
+#include <iostream>
+#include <chrono>
+#include <thread>
+using namespace std;
+
+#include <omp.h>
+
+int main() {
+    #pragma omp parallel
+    {
+        #pragma omp single
+        {
+            #pragma omp task
+            {
+                cout << "Hello world from thread "
+                    << omp_get_thread_num() << endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
+            #pragma omp task
+            {
+                cout << "Goodbye world from thread "
+                    << omp_get_thread_num() << endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
+            cout << "MASTER has finished creating tasks." << endl;
+        }
+    }
+    cout << "End of single region." << endl;
+}
+```
+
+```cpp
+
+```
