@@ -441,7 +441,7 @@ Documentation for the BLAS API is available [here](http://www.netlib.org/blas/in
 
 ## LAPACK
 
-LAPACK builds upon the basic operations of BLAS, for more advanced linear algebra operations. To link to LAACK, add the linker flag:
+LAPACK builds upon the basic operations of BLAS, for more advanced linear algebra operations. To link to LAPACK, add the linker flag:
 
 ```bash
 g++ myprog.cpp -llapack -lblas
