@@ -10,6 +10,7 @@ To use code linting with `cblas.h`, add the headerfile to your local workspace. 
 * [BLAS documentation pages](http://www.netlib.org/blas)
 * [LAPACK quick reference](https://usermanual.wiki/Document/LAPACK20Quick20Reference20Guide.1468851174/view)
 * [LAPACK documentation pages](http://www.netlib.org/lapack/explore-html/modules.html)
+* [OpenMPI documentation pages](https://www.open-mpi.org/doc/v4.1/)
 
 ## Installation and Setup
 
